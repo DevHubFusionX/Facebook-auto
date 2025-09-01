@@ -149,6 +149,31 @@ app.post('/api/system/headless-mode', async (req, res) => {
   }
 });
 
+// Set primary account
+app.post('/api/system/primary-account', async (req, res) => {
+  try {
+    const { accountId } = req.body;
+    fbManager.setPrimaryAccount(accountId);
+    res.json({ 
+      success: true, 
+      message: 'Primary account updated. Restart tag listener to apply.',
+      primaryAccountId: accountId
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get primary account
+app.get('/api/system/primary-account', async (req, res) => {
+  try {
+    const primaryAccountId = fbManager.getPrimaryAccount();
+    res.json({ primaryAccountId });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Tag listener is automatically started with the system
 
 app.post('/api/broadcast', async (req, res) => {

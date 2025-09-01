@@ -38,6 +38,7 @@ class FacebookManager extends EventEmitter {
     this.processedPosts = new Set();
     this.tagKeyword = '@autolike'; // Default tag keyword
     this.headlessMode = true; // Default to headless
+    this.primaryAccountId = null; // Manually selected primary account
   }
 
   async loadAccountsFromDB(silent = false, preserveStatus = false) {
@@ -847,9 +848,21 @@ class FacebookManager extends EventEmitter {
       return;
     }
     
-    // Use FIRST ready account as the primary listener
-    const primaryAccount = readyAccounts[0];
-    console.log(`🎯 [LISTENER] Primary listener: ${primaryAccount.email}`);
+    // Use manually selected primary account or first ready account
+    let primaryAccount;
+    if (this.primaryAccountId) {
+      primaryAccount = readyAccounts.find(acc => acc.id === this.primaryAccountId);
+      if (!primaryAccount) {
+        console.log(`⚠️ [LISTENER] Selected primary account not ready, using first available`);
+        primaryAccount = readyAccounts[0];
+      } else {
+        console.log(`🎯 [LISTENER] Using selected primary: ${primaryAccount.email}`);
+      }
+    } else {
+      primaryAccount = readyAccounts[0];
+      console.log(`🎯 [LISTENER] Auto-selected primary: ${primaryAccount.email}`);
+    }
+    
     console.log(`🎭 [LISTENER] Actor accounts: ${readyAccounts.length - 1} (will receive broadcasts)`);
     
     // Only monitor notifications for the PRIMARY account
@@ -1532,6 +1545,15 @@ class FacebookManager extends EventEmitter {
 
   getHeadlessMode() {
     return this.headlessMode;
+  }
+
+  setPrimaryAccount(accountId) {
+    this.primaryAccountId = accountId;
+    console.log(`🎯 [PRIMARY] Selected account ID: ${accountId}`);
+  }
+
+  getPrimaryAccount() {
+    return this.primaryAccountId;
   }
 
   async saveSessionToDB(page, account) {
