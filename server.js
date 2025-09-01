@@ -9,7 +9,7 @@ const FacebookManager = require('./facebook-manager');
 const { connectDB } = require('./database');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Connect to MongoDB Atlas
 connectDB();
@@ -17,8 +17,9 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
-// WebSocket server for real-time updates
-const wss = new WebSocket.Server({ port: 8080 });
+// WebSocket server for real-time updates  
+const WS_PORT = process.env.NODE_ENV === 'production' ? (process.env.PORT || 3001) + 1 : 8080;
+const wss = new WebSocket.Server({ port: WS_PORT });
 
 // Facebook automation manager
 const fbManager = new FacebookManager();
@@ -272,9 +273,9 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 [SERVER] Auto-Liker API → :${PORT}`);
-  console.log(`📡 [SERVER] WebSocket → :8080`);
+  console.log(`📡 [SERVER] WebSocket → :${WS_PORT}`);
   console.log(`💾 [SERVER] MongoDB Atlas connected`);
   console.log(`🧠 [SERVER] Memory: ${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`);
   console.log(`✨ [SERVER] Ready for connections`);

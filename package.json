@@ -10,11 +10,15 @@
     "postinstall": "echo 'Skipping Puppeteer Chrome download'"
   },
   "engines": {
-    "node": ">=20.0.0",
+    "node": "20.x",
     "npm": ">=9.0.0"
   },
   "config": {
     "puppeteer_skip_chromium_download": "true"
+  },
+  "env": {
+    "PUPPETEER_SKIP_DOWNLOAD": "true",
+    "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/google-chrome"
   },
   "puppeteer": {
     "skip_download": "true"
