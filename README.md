@@ -5,10 +5,11 @@ Backend API for Facebook automation system that monitors for tagged posts and au
 ## 🚀 Features
 
 - **Multi-Account Management**: Handle multiple Facebook accounts simultaneously
-- **Tag Detection**: Monitor for custom keywords (e.g., @autolike, @sushma)
-- **Automatic Liking**: Auto-like posts when tags are detected
-- **Session Persistence**: Save login sessions to MongoDB
+- **Real-Time Tag Detection**: Monitor Facebook notifications for tags (1-2 second response)
+- **Instant Auto-Liking**: Broadcast and like posts across all accounts within seconds
+- **Session Persistence**: Save login sessions to MongoDB (no repeated logins)
 - **Headless Operation**: Run in background without visible browsers
+- **Stealth Mode**: Human-like behavior with randomized delays and fingerprints
 - **Real-time Updates**: WebSocket communication for live status
 - **Proxy Support**: Use different proxies for each account
 
@@ -110,6 +111,20 @@ docker run -p 3001:3001 -e MONGODB_URI=your_uri facebook-auto-backend
 - Memory usage monitoring
 - Auto-like history tracking
 - Session validity monitoring
+
+## 🔍 How Tag Detection Works
+
+**Simple Explanation**: *"The system continuously watches your Facebook notifications. As soon as someone tags you, it grabs that post link and sends it to all your accounts, which immediately like it."*
+
+### Process Flow:
+1. **Session Management**: Accounts stay logged in with saved cookies
+2. **Notification Monitoring**: Scans Facebook notifications every 2 seconds
+3. **Tag Detection**: Finds notifications containing account tags
+4. **Link Extraction**: Parses post URLs from notifications
+5. **Instant Broadcast**: Sends post to all active accounts
+6. **Parallel Liking**: All accounts like the post within 1 second
+
+See [TAG_DETECTION_GUIDE.md](TAG_DETECTION_GUIDE.md) for detailed technical explanation.
 
 ## 📄 License
 

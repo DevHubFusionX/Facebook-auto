@@ -842,11 +842,23 @@ class FacebookManager extends EventEmitter {
       acc.status === 'online' && acc.loginStatus === 'verified' && acc.page
     );
     
-    console.log(`🔍 [LISTENER] Monitoring ${readyAccounts.length}/${this.accounts.length} accounts`);
+    if (readyAccounts.length === 0) {
+      console.log('❌ [LISTENER] No accounts ready for monitoring');
+      return;
+    }
     
-    // Monitor notifications for all verified accounts
-    for (const account of readyAccounts) {
-      this.monitorNotifications(account);
+    // Use FIRST ready account as the primary listener
+    const primaryAccount = readyAccounts[0];
+    console.log(`🎯 [LISTENER] Primary listener: ${primaryAccount.email}`);
+    console.log(`🎭 [LISTENER] Actor accounts: ${readyAccounts.length - 1} (will receive broadcasts)`);
+    
+    // Only monitor notifications for the PRIMARY account
+    this.monitorNotifications(primaryAccount);
+    
+    // Log actor accounts
+    const actorAccounts = readyAccounts.slice(1);
+    if (actorAccounts.length > 0) {
+      console.log(`🎭 [ACTORS] Ready: ${actorAccounts.map(a => a.email).join(', ')}`);
     }
     
     // Log skipped accounts
@@ -890,20 +902,20 @@ class FacebookManager extends EventEmitter {
     console.log('✅ [SCAN] Completed');
   }
 
-  async monitorNotifications(account) {
-    if (!account.page || !this.isListening) return;
+  async monitorNotifications(primaryAccount) {
+    if (!primaryAccount.page || !this.isListening) return;
     
     try {
-      console.log(`👂 [MONITOR] ${account.email} - Started`);
+      console.log(`🎯 [PRIMARY] ${primaryAccount.email} - Started monitoring notifications`);
       
-      // Monitor notifications page for mentions/tags
+      // Monitor notifications page for mentions/tags (PRIMARY ACCOUNT ONLY)
       const monitorNotifications = async () => {
         if (!this.isListening) return;
         
         try {
-          await this.checkNotifications(account);
+          await this.checkNotifications(primaryAccount);
         } catch (error) {
-          console.error(`❌ [MONITOR] ${account.email}: ${error.message}`);
+          console.error(`❌ [PRIMARY] ${primaryAccount.email}: ${error.message}`);
         }
         
         // Continue monitoring every 2 seconds for faster detection
@@ -913,7 +925,7 @@ class FacebookManager extends EventEmitter {
       monitorNotifications();
       
     } catch (error) {
-      console.error(`❌ [MONITOR] Failed to start for ${account.email}: ${error.message}`);
+      console.error(`❌ [PRIMARY] Failed to start monitoring for ${primaryAccount.email}: ${error.message}`);
     }
   }
   
@@ -992,27 +1004,27 @@ class FacebookManager extends EventEmitter {
       
       // Only log if there are notifications to avoid spam
       if (notificationData.tagNotifications.length > 0) {
-        console.log(`📝 [NOTIF] ${account.email}: ${notificationData.tagNotifications.length} tags found`);
+        console.log(`📝 [PRIMARY] ${account.email}: ${notificationData.tagNotifications.length} tags found`);
       }
       
-      // Process each tag notification
+      // Process each tag notification (PRIMARY ACCOUNT DETECTION)
       for (const notification of notificationData.tagNotifications) {
-        console.log(`🎯 [TAG] ${account.email}: "${notification.text.substring(0, 50)}..."`);
-        console.log(`🔗 [TAG] Link: ${notification.link}`);
+        console.log(`🎯 [TAG DETECTED] ${account.email}: "${notification.text.substring(0, 50)}..."`);
+        console.log(`🔗 [POST LINK] ${notification.link}`);
         
         // Avoid duplicate processing
         if (!this.processedPosts) this.processedPosts = new Set();
         if (this.processedPosts.has(notification.link)) {
-          console.log(`⚠️ [TAG] Duplicate: ${notification.link}`);
+          console.log(`⚠️ [DUPLICATE] Already processed: ${notification.link}`);
           continue;
         }
         
         this.processedPosts.add(notification.link);
         
-        console.log(`✅ [TAG] New detection → Broadcasting`);
+        console.log(`📡 [BROADCAST] Sending to ALL accounts for auto-liking`);
         this.emit('tagDetected', { account: account.email, postUrl: notification.link });
         
-        // Auto-broadcast to all accounts
+        // Broadcast to ALL accounts (including primary)
         await this.broadcastLike(notification.link);
       }
       
@@ -1263,22 +1275,25 @@ class FacebookManager extends EventEmitter {
     
     const onlineAccounts = this.accounts.filter(acc => acc.status === 'online');
     
-    console.log(`📡 [BROADCAST] ${postUrl.substring(0, 50)}... → ${onlineAccounts.length} accounts`);
+    console.log(`📡 [BROADCAST] Detected by PRIMARY → Sending to ${onlineAccounts.length} accounts`);
+    console.log(`🔗 [POST] ${postUrl.substring(0, 60)}...`);
     
     const results = [];
     
     // Execute all likes in parallel with minimal randomization (0-500ms)
     const likePromises = onlineAccounts.map((account, index) => {
       const randomDelay = Math.random() * 500; // 0-500ms randomization
+      const accountType = index === 0 ? 'PRIMARY' : 'ACTOR';
       
       return new Promise(resolve => {
         setTimeout(async () => {
           try {
             const result = await this.likePost(account, postUrl);
+            console.log(`👍 [${accountType}] ${account.email} - ${result.success ? 'Liked' : 'Failed'}`);
             results.push(result);
             resolve(result);
           } catch (error) {
-            console.error(`❌ [LIKE] ${account.email}: ${error.message}`);
+            console.error(`❌ [${accountType}] ${account.email}: ${error.message}`);
             resolve({ account: account.email, success: false, error: error.message });
           }
         }, randomDelay);
@@ -1291,7 +1306,7 @@ class FacebookManager extends EventEmitter {
     const skipped = results.filter(r => r.skipped).length;
     const failed = results.filter(r => !r.success).length;
     
-    console.log(`✅ [BROADCAST] Complete: ${successful} ✓, ${skipped} skip, ${failed} ✗`);
+    console.log(`✅ [BROADCAST COMPLETE] ${successful} ✓, ${skipped} skip, ${failed} ✗`);
     return results;
   }
 
