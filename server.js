@@ -18,8 +18,8 @@ app.use(cors());
 app.use(express.json());
 
 // WebSocket server for real-time updates  
-const WS_PORT = process.env.NODE_ENV === 'production' ? (process.env.PORT || 3001) + 1 : 8080;
-const wss = new WebSocket.Server({ port: WS_PORT });
+const WS_PORT = process.env.NODE_ENV === 'production' ? parseInt(process.env.PORT || 3001) + 1 : 8080;
+const wss = new WebSocket.Server({ port: parseInt(WS_PORT) });
 
 // Facebook automation manager
 const fbManager = new FacebookManager();
