@@ -17,12 +17,19 @@
     "puppeteer_skip_chromium_download": "true"
   },
   "env": {
-    "PUPPETEER_SKIP_DOWNLOAD": "true",
-    "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/google-chrome"
+    "PUPPETEER_SKIP_DOWNLOAD": "true"
   },
   "puppeteer": {
     "skip_download": "true"
   },
+  "buildpacks": [
+    {
+      "url": "https://github.com/jontewks/puppeteer-heroku-buildpack"
+    },
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
   "dependencies": {
     "cluster": "^0.7.7",
     "compression": "^1.8.1",

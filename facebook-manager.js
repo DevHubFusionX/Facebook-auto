@@ -214,7 +214,7 @@ class FacebookManager extends EventEmitter {
         defaultViewport: this.headlessMode ? { width: 1366, height: 768 } : null,
         userDataDir: `./browser-data/${account.email.replace('@', '_')}`,
         timeout: 20000,
-        executablePath: process.env.NODE_ENV === 'production' ? '/usr/bin/google-chrome' : undefined,
+        executablePath: process.env.NODE_ENV === 'production' ? (process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome') : undefined,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
