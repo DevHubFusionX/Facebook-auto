@@ -1,38 +1,7 @@
-# Dependencies
 node_modules/
-npm-debug.log*
-
-# Environment variables
 .env
-.env.local
-.env.production.local
-
-# Browser data (contains user sessions)
 browser-data/
-
-# Logs
-logs
+user_data/
 *.log
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory
-coverage/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Temporary folders
-tmp/
-temp/
-
-# OS generated files
 .DS_Store
 Thumbs.db
