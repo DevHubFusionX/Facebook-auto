@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // MongoDB Atlas connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/facebook-autoliker?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://automating:auto@cluster0.yhimrgb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 // Account Schema
 const accountSchema = new mongoose.Schema({
