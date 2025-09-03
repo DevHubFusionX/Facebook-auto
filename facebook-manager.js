@@ -209,28 +209,12 @@ class FacebookManager extends EventEmitter {
     try {
       console.log(`🔄 [INIT] ${account.email}...`);
       
-      // Skip browser initialization in production (Render doesn't support browsers)
-      if (process.env.NODE_ENV === 'production') {
-        console.log(`⚠️ [INIT] ${account.email} - Browser not supported in production, marking as ready`);
-        account.loginStatus = 'verified';
-        account.status = 'online';
-        account.profileName = 'Production User';
-        account.lastAction = 'Ready for API-only mode';
-        
-        const accountIndex = this.accounts.findIndex(acc => acc.id === account.id);
-        if (accountIndex !== -1) {
-          this.accounts[accountIndex] = account;
-        }
-        
-        this.emit('accountStatusChanged', account);
-        return;
-      }
-      
       const browserOptions = {
         headless: this.headlessMode ? 'new' : false,
         defaultViewport: this.headlessMode ? { width: 1366, height: 768 } : null,
         userDataDir: `./browser-data/${account.email.replace('@', '_')}`,
         timeout: 20000,
+        executablePath: process.env.NODE_ENV === 'production' ? '/usr/bin/google-chrome' : undefined,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -252,10 +236,13 @@ class FacebookManager extends EventEmitter {
           '--aggressive-cache-discard',
           '--memory-pressure-off',
           '--disable-gpu',
-          '--disable-software-rasterizer'
+          '--disable-software-rasterizer',
+          '--no-sandbox',
+          '--disable-dev-shm-usage'
         ]
       };
       
+      // Add proxy if provided
       if (account.proxy) {
         browserOptions.args.push(`--proxy-server=${account.proxy}`);
       }
@@ -794,7 +781,7 @@ class FacebookManager extends EventEmitter {
 
   async extractProfileName(page, account) {
     try {
-      await page.waitForTimeout(1000);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Try to get name from current page (both desktop and mobile)
       let profileName = await page.evaluate(() => {
@@ -964,7 +951,7 @@ class FacebookManager extends EventEmitter {
       const currentUrl = account.page.url();
       if (!currentUrl.includes('/notifications')) {
         await account.page.goto('https://facebook.com/notifications', { waitUntil: 'domcontentloaded' });
-        await account.page.waitForTimeout(2000);
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
       
       // Get notification data using page.evaluate for better reliability
@@ -1307,22 +1294,11 @@ class FacebookManager extends EventEmitter {
     console.log(`📡 [BROADCAST] Detected by PRIMARY → Sending to ${onlineAccounts.length} accounts`);
     console.log(`🔗 [POST] ${postUrl.substring(0, 60)}...`);
     
-    // In production, simulate likes without browser
-    if (process.env.NODE_ENV === 'production') {
-      const results = onlineAccounts.map(account => {
-        account.totalLikes++;
-        account.lastAction = `Simulated like: ${postUrl}`;
-        return { account: account.email, success: true, simulated: true };
-      });
-      
-      console.log(`✅ [BROADCAST COMPLETE] ${results.length} simulated likes`);
-      return results;
-    }
-    
     const results = [];
     
+    // Execute all likes in parallel with minimal randomization (0-500ms)
     const likePromises = onlineAccounts.map((account, index) => {
-      const randomDelay = Math.random() * 500;
+      const randomDelay = Math.random() * 500; // 0-500ms randomization
       const accountType = index === 0 ? 'PRIMARY' : 'ACTOR';
       
       return new Promise(resolve => {
@@ -1360,7 +1336,7 @@ class FacebookManager extends EventEmitter {
         timeout: 15000
       });
       
-      await account.page.waitForTimeout(500);
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // First check if post is already liked
       const alreadyLiked = await account.page.evaluate(() => {
@@ -1474,7 +1450,7 @@ class FacebookManager extends EventEmitter {
         }
         
         // Minimal wait for like to register
-        await account.page.waitForTimeout(200);
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         account.totalLikes++;
         account.lastAction = `Liked post: ${postUrl}`;
